@@ -5,7 +5,9 @@ from transformers import AutoTokenizer, AutoModel
 
 
 class BioBERTEmbedding:
+
     def __init__(self):
+
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.MODEL_NAME = "emilyalsentzer/Bio_ClinicalBERT"
@@ -17,6 +19,7 @@ class BioBERTEmbedding:
         self.model.eval()
 
     def mean_pooling(self, model_output, attention_mask):
+
         token_embeddings = model_output.last_hidden_state
 
         input_mask_expanded = attention_mask.unsqueeze(-1).expand(
@@ -44,11 +47,17 @@ class BioBERTEmbedding:
         with torch.no_grad():
             outputs = self.model(**inputs)
 
-        embedding = self.mean_pooling(outputs, inputs["attention_mask"]).cpu().numpy()[0]
+        embedding = self.mean_pooling(
+            outputs,
+            inputs["attention_mask"]
+        ).cpu().numpy()[0]
 
         norm = np.linalg.norm(embedding)
 
-        embedding = embedding / norm if norm > 0 else embedding
+        if norm > 0:
+            embedding = embedding / norm
+        else:
+            embedding = np.zeros_like(embedding)
 
         return embedding
 
@@ -65,14 +74,12 @@ class EmbeddingEngine:
         self.embedding_model_name = "BioClinicalBERT"
         self.embedding_version = "v1"
 
-    # Public Method
+    # Generate embedding for retrieval
     def generate_embedding(self, case_data: Dict[str, Any]) -> np.ndarray:
 
         processed_text = self._preprocess_case(case_data)
 
         embedding_vector = self.embedding_model.get_embedding(processed_text)
-
-        embedding_vector = embedding_vector[:self.embedding_dim]
 
         return embedding_vector
 
@@ -87,14 +94,14 @@ class EmbeddingEngine:
             "embedding_version": self.embedding_version
         }
 
-    # Private Method
+    # Convert clinical case into text
     def _preprocess_case(self, case_data: Dict[str, Any]) -> str:
 
         symptoms = case_data.get("symptoms", [])
 
         diagnosis = case_data.get("diagnosis", "")
 
-        notes = case_data.get("notes", "")
+        notes = case_data.get("doctor_notes", case_data.get("notes", ""))
 
         combined_text = " ".join(symptoms) + " " + diagnosis + " " + notes
 
