@@ -6,6 +6,7 @@ from typing import Dict
 from embedding import EmbeddingEngine
 from similarity_engine import SimilarityEngine
 from insight_aggregator import InsightAggregator
+from confidence_engine import ConfidenceEngine
 
 from utils import validate_case_input, format_output, log
 from config import TOP_K, EMBEDDING_DIM
@@ -24,9 +25,11 @@ def main():
         log("Loading case embeddings...")
         case_embeddings = fetch_case_embeddings()
 
+        # Initialize Engines
         embedding_engine = EmbeddingEngine(embedding_dim=EMBEDDING_DIM)
         similarity_engine = SimilarityEngine(case_embeddings)
         insight_aggregator = InsightAggregator()
+        confidence_engine = ConfidenceEngine()
 
         test_cases = [
             {
@@ -47,10 +50,13 @@ def main():
 
             log(f"Processing {new_case['case_id']}")
 
+            # Validate input
             validate_case_input(new_case)
 
+            # Generate embedding
             query_embedding = embedding_engine.generate_embedding(new_case)
 
+            # Retrieve similar cases
             top_matches = similarity_engine.retrieve_top_k(
                 query_embedding,
                 top_k=TOP_K
@@ -66,8 +72,17 @@ def main():
                     case["similarity"] = similarity_score
                     retrieved_cases.append(case)
 
+            # Aggregate insights
             insight = insight_aggregator.aggregate_insights(retrieved_cases)
 
+            # Compute confidence
+            confidence = confidence_engine.evaluate(retrieved_cases)
+
+            # Attach confidence to insight
+            insight["confidence_score"] = confidence["confidence_score"]
+            insight["confidence_level"] = confidence["confidence_level"]
+
+            # Format final output
             result = format_output(
                 query_case_id=new_case["case_id"],
                 top_matches=top_matches,

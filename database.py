@@ -5,17 +5,17 @@ import numpy as np
 from config import MONGO_URI, DATABASE_NAME, COLLECTION_NAME
 
 
-# ---------------------------------------
+
 # CONNECT TO MONGODB
-# ---------------------------------------
+
 client = MongoClient(MONGO_URI)
 db = client[DATABASE_NAME]
 collection = db[COLLECTION_NAME]
 
 
-# ---------------------------------------
+
 # FETCH FULL CASE DATABASE
-# ---------------------------------------
+
 def fetch_case_database():
     case_database = {}
 
@@ -51,9 +51,9 @@ def fetch_case_database():
     return case_database
 
 
-# ---------------------------------------
+
 # FETCH STORED EMBEDDINGS
-# ---------------------------------------
+
 def fetch_case_embeddings():
     embeddings = {}
 
