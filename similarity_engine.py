@@ -11,10 +11,9 @@ class SimilarityEngine:
         
         self.case_embeddings = case_embeddings
 
-    # ---------------------------------------------------
+    
     # Public Method
-    # ---------------------------------------------------
-
+    
     def retrieve_top_k(
         self,
         query_embedding: np.ndarray,

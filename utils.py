@@ -1,47 +1,54 @@
 # utils.py
 
 import pandas as pd
-from typing import Dict, Any
+from typing import Dict, Any, List, Tuple
 
 
 
 # DATA LOADER
 
+
 def load_case_database(file_path: str) -> Dict[str, Dict[str, Any]]:
-    
+    """
+    Load clinical case database from CSV and convert
+    it into a structured dictionary format.
+    """
 
     df = pd.read_csv(file_path)
-    case_database = {}
+    case_database: Dict[str, Dict[str, Any]] = {}
 
     for _, row in df.iterrows():
 
-        case_id = str(row["case_id"])
+        case_id = str(row["case_id"]).strip()
 
-        # Convert symptoms string to list
-        symptoms_raw = str(row["symptoms"])
-        symptoms_list = [s.strip() for s in symptoms_raw.split(",")]
+        # Convert symptoms string into list
+        symptoms_raw = str(row.get("symptoms", ""))
+        symptoms_list = [s.strip() for s in symptoms_raw.split(",") if s.strip()]
 
         case_database[case_id] = {
             "symptoms": symptoms_list,
-            "diagnosis": row.get("diagnosis", ""),
-            "treatment": row.get("treatment", ""),
-            "notes": row.get("doctor_notes", ""),
-            "duration_days": row.get("duration_days", None),
-            "clinic_id": row.get("clinic_id", None),
-            "patient_age": row.get("patient.age", None),
-            "patient_gender": row.get("patient.gender", None),
-            "outcome": row.get("outcome", ""),
-            "recovery_days": row.get("recovery_days", None),
+            "diagnosis": str(row.get("diagnosis", "")).strip(),
+            "treatment": str(row.get("treatment", "")).strip(),
+            "notes": str(row.get("doctor_notes", "")).strip(),
+            "duration_days": row.get("duration_days"),
+            "clinic_id": row.get("clinic_id"),
+            "patient_age": row.get("patient.age"),
+            "patient_gender": row.get("patient.gender"),
+            "outcome": str(row.get("outcome", "")).strip(),
+            "recovery_days": row.get("recovery_days"),
         }
 
     return case_database
+
 
 
 # INPUT VALIDATION
 
 
 def validate_case_input(case_input: Dict[str, Any]) -> bool:
-   
+    """
+    Validate incoming query case before processing.
+    """
 
     required_fields = ["symptoms"]
 
@@ -58,35 +65,64 @@ def validate_case_input(case_input: Dict[str, Any]) -> bool:
 
 # OUTPUT FORMATTER
 
+
 def format_output(
     query_case_id: str,
-    top_matches,
+    top_matches: List[Tuple[str, float]],
     insight: Dict[str, Any]
 ) -> str:
     """
-    Format final structured output.
+    Format the final CCMS-AI output report.
     """
 
     result = "\n==== CCMS-AI RESULT ====\n\n"
 
     result += f"Query Case ID: {query_case_id}\n\n"
 
+    # Similar cases
     result += "🔎 Top Similar Cases:\n"
-    for case_id, similarity in top_matches:
-        result += f"- Case ID: {case_id} | Similarity: {similarity:.4f}\n"
+
+    if not top_matches:
+        result += "No similar cases found.\n"
+    else:
+        for case_id, similarity in top_matches:
+            result += f"- Case ID: {case_id} | Similarity: {similarity:.4f}\n"
+
+    # Diagnosis
+    diagnosis = insight.get(
+        "diagnosis",
+        "No confident diagnosis could be inferred from the retrieved cases."
+    )
 
     result += "\n🩺 Predicted Diagnosis:\n"
-    result += insight.get("most_common_diagnosis", "N/A") + "\n"
+    result += f"{diagnosis}\n"
+
+    # Treatment
+    treatment = insight.get(
+        "treatment",
+        "No treatment recommendation available due to insufficient matching cases."
+    )
 
     result += "\n💊 Suggested Treatment:\n"
-    result += insight.get("recommended_treatment", "N/A") + "\n"
+    result += f"{treatment}\n"
 
-    result += "\n📊 Confidence:\n"
-    result += insight.get("confidence_note", "N/A") + "\n"
+    # Confidence output
+    confidence_score = insight.get("confidence_score", "N/A")
+    confidence_level = insight.get(
+        "confidence_level",
+        "Confidence could not be determined."
+    )
+
+    result += "\n📊 Confidence Score:\n"
+    result += f"{confidence_score}\n"
+
+    result += "\n📈 Confidence Level:\n"
+    result += f"{confidence_level}\n"
 
     result += "\n===============================================\n"
 
     return result
+
 
 
 # LOGGER
@@ -94,6 +130,6 @@ def format_output(
 
 def log(message: str) -> None:
     """
-    Simple console logger.
+    Simple console logger for CCMS-AI system.
     """
     print(f"[CCMS-AI] {message}")

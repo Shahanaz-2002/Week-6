@@ -19,6 +19,7 @@ def main():
 
         start_time = time.time()
 
+        # Load Data
         log("Loading case database...")
         case_database: Dict = fetch_case_database()
 
@@ -31,6 +32,7 @@ def main():
         insight_aggregator = InsightAggregator()
         confidence_engine = ConfidenceEngine()
 
+        # Test Query Cases
         test_cases = [
             {
                 "case_id": "NEW_SKIN_003",
@@ -46,6 +48,7 @@ def main():
             }
         ]
 
+        # Process Each Case
         for new_case in test_cases:
 
             log(f"Processing {new_case['case_id']}")
@@ -62,6 +65,7 @@ def main():
                 top_k=TOP_K
             )
 
+            # Collect full case details
             retrieved_cases = []
 
             for case_id, similarity_score in top_matches:
@@ -72,17 +76,16 @@ def main():
                     case["similarity"] = similarity_score
                     retrieved_cases.append(case)
 
-            # Aggregate insights
+            # Generate Insights
             insight = insight_aggregator.aggregate_insights(retrieved_cases)
 
-            # Compute confidence
-            confidence = confidence_engine.evaluate(retrieved_cases)
+            # Compute Confidence Score
+            confidence = confidence_engine.compute_confidence(retrieved_cases)
 
-            # Attach confidence to insight
             insight["confidence_score"] = confidence["confidence_score"]
             insight["confidence_level"] = confidence["confidence_level"]
 
-            # Format final output
+            # Format Final Output
             result = format_output(
                 query_case_id=new_case["case_id"],
                 top_matches=top_matches,
@@ -92,9 +95,11 @@ def main():
             print(result)
 
         end_time = time.time()
+
         log(f"Execution Time: {end_time - start_time:.2f} sec")
 
     except Exception as e:
+
         log(f"ERROR: {str(e)}")
 
 

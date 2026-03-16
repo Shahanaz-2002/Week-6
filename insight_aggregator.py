@@ -6,9 +6,9 @@ class InsightAggregator:
 
         if not retrieved_cases:
             return {
-                "diagnosis": "N/A",
-                "treatment": "N/A",
-                "confidence": "N/A"
+                "diagnosis": "No similar clinical cases were retrieved from the database.",
+                "treatment": "Treatment recommendation cannot be generated due to lack of similar cases.",
+                "confidence": "Confidence score unavailable because no case similarity was established."
             }
 
         diagnosis_count = {}
@@ -35,16 +35,20 @@ class InsightAggregator:
                 treatment_count[treatment] += similarity
 
         if not diagnosis_count:
-            predicted_diagnosis = "N/A"
+            predicted_diagnosis = "No confident diagnosis could be inferred from the retrieved cases."
         else:
             predicted_diagnosis = max(diagnosis_count, key=diagnosis_count.get)
 
         if not treatment_count:
-            predicted_treatment = "N/A"
+            predicted_treatment = "No treatment recommendation available due to insufficient matching cases."
         else:
             predicted_treatment = max(treatment_count, key=treatment_count.get)
 
-        confidence = round(max(diagnosis_count.values()), 3) if diagnosis_count else "N/A"
+        confidence = (
+            round(max(diagnosis_count.values()), 3)
+            if diagnosis_count
+            else "Confidence score unavailable because no valid diagnosis was determined."
+        )
 
         return {
             "diagnosis": predicted_diagnosis,

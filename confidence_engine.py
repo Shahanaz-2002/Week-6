@@ -1,62 +1,42 @@
 # confidence_engine.py
 
-from typing import List, Dict
+from config import TOP_K
 
 
 class ConfidenceEngine:
-    
 
-    def __init__(self, max_cases: int = 5):
-        self.max_cases = max_cases
+    def compute_confidence(self, retrieved_cases):
 
-    def compute_average_similarity(self, cases: List[Dict]) -> float:
-        
-        if not cases:
-            return 0.0
+        # If no cases retrieved
+        if not retrieved_cases:
+            return {
+                "confidence_score": 0.0,
+                "confidence_level": "No similar cases found"
+            }
 
-        scores = [case["similarity"] for case in cases]
+        # Extract similarity scores
+        similarities = [case["similarity"] for case in retrieved_cases]
 
-        return sum(scores) / len(scores)
+        # Average similarity
+        avg_similarity = sum(similarities) / len(similarities)
 
-    def compute_support_factor(self, cases: List[Dict]) -> float:
-        
-        if not cases:
-            return 0.0
+        # Number of supporting cases
+        support_ratio = len(retrieved_cases) / TOP_K
 
-        support = len(cases) / self.max_cases
-        return min(support, 1.0)
+        # Confidence formula
+        confidence_score = (0.7 * avg_similarity) + (0.3 * support_ratio)
 
-    def compute_confidence_score(self, cases: List[Dict]) -> float:
-        
-        if not cases:
-            return 0.0
-
-        avg_similarity = self.compute_average_similarity(cases)
-        support_factor = self.compute_support_factor(cases)
-
-        confidence = (0.7 * avg_similarity) + (0.3 * support_factor)
-
-        return round(confidence, 4)
-
-    def classify_confidence(self, score: float) -> str:
-        
-        if score >= 0.85:
-            return "Very High"
-        elif score >= 0.70:
-            return "High"
-        elif score >= 0.50:
-            return "Moderate"
+        # Threshold logic
+        if confidence_score >= 0.85:
+            level = "Very High Confidence"
+        elif confidence_score >= 0.70:
+            level = "High Confidence"
+        elif confidence_score >= 0.50:
+            level = "Moderate Confidence"
         else:
-            return "Low"
-
-    def evaluate(self, cases: List[Dict]) -> Dict:
-        
-
-        score = self.compute_confidence_score(cases)
-        level = self.classify_confidence(score)
+            level = "Low Confidence"
 
         return {
-            "confidence_score": score,
-            "confidence_level": level,
-            "supporting_cases": len(cases)
+            "confidence_score": round(confidence_score, 3),
+            "confidence_level": level
         }
