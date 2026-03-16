@@ -4,15 +4,10 @@ import pandas as pd
 from typing import Dict, Any, List, Tuple
 
 
-
 # DATA LOADER
 
-
 def load_case_database(file_path: str) -> Dict[str, Dict[str, Any]]:
-    """
-    Load clinical case database from CSV and convert
-    it into a structured dictionary format.
-    """
+    
 
     df = pd.read_csv(file_path)
     case_database: Dict[str, Dict[str, Any]] = {}
@@ -41,14 +36,10 @@ def load_case_database(file_path: str) -> Dict[str, Dict[str, Any]]:
     return case_database
 
 
-
 # INPUT VALIDATION
 
-
 def validate_case_input(case_input: Dict[str, Any]) -> bool:
-    """
-    Validate incoming query case before processing.
-    """
+    
 
     required_fields = ["symptoms"]
 
@@ -62,18 +53,14 @@ def validate_case_input(case_input: Dict[str, Any]) -> bool:
     return True
 
 
-
 # OUTPUT FORMATTER
-
 
 def format_output(
     query_case_id: str,
     top_matches: List[Tuple[str, float]],
     insight: Dict[str, Any]
 ) -> str:
-    """
-    Format the final CCMS-AI output report.
-    """
+    
 
     result = "\n==== CCMS-AI RESULT ====\n\n"
 
@@ -119,17 +106,22 @@ def format_output(
     result += "\n📈 Confidence Level:\n"
     result += f"{confidence_level}\n"
 
+    # Clinical Explanation (NEW SECTION)
+    explanation = insight.get(
+        "clinical_explanation",
+        "No clinical explanation available."
+    )
+
+    result += "\n🧠 Clinical Explanation:\n"
+    result += f"{explanation}\n"
+
     result += "\n===============================================\n"
 
     return result
 
 
-
 # LOGGER
 
-
 def log(message: str) -> None:
-    """
-    Simple console logger for CCMS-AI system.
-    """
+    
     print(f"[CCMS-AI] {message}")

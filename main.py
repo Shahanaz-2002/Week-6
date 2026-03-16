@@ -7,6 +7,7 @@ from embedding import EmbeddingEngine
 from similarity_engine import SimilarityEngine
 from insight_aggregator import InsightAggregator
 from confidence_engine import ConfidenceEngine
+from explanation_generator import ExplanationGenerator
 
 from utils import validate_case_input, format_output, log
 from config import TOP_K, EMBEDDING_DIM
@@ -31,6 +32,7 @@ def main():
         similarity_engine = SimilarityEngine(case_embeddings)
         insight_aggregator = InsightAggregator()
         confidence_engine = ConfidenceEngine()
+        explanation_generator = ExplanationGenerator()
 
         # Test Query Cases
         test_cases = [
@@ -84,6 +86,14 @@ def main():
 
             insight["confidence_score"] = confidence["confidence_score"]
             insight["confidence_level"] = confidence["confidence_level"]
+
+            # Generate Clinical Explanation
+            explanation = explanation_generator.generate_explanation(
+                insight,
+                retrieved_cases
+            )
+
+            insight["clinical_explanation"] = explanation
 
             # Format Final Output
             result = format_output(
