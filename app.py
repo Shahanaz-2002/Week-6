@@ -30,6 +30,8 @@ def initialize_system():
 
     case_database = fetch_case_database()
 
+    print("DB SIZE:", len(case_database))  # 🔥 DEBUG
+
     if not case_database:
         print("⚠ No cases found in database.")
         return
@@ -37,8 +39,11 @@ def initialize_system():
     case_embeddings = {}
 
     for case_id, case_data in case_database.items():
-        embedding = embedding_engine.generate_embedding(case_data)
-        case_embeddings[case_id] = embedding
+        try:
+            embedding = embedding_engine.generate_embedding(case_data)
+            case_embeddings[case_id] = embedding
+        except Exception as e:
+            print(f"Embedding error for {case_id}:", str(e))  # 🔥 DEBUG
 
     similarity_engine = SimilarityEngine(case_embeddings)
     insight_generator = InsightGenerator(case_database)
@@ -61,6 +66,7 @@ def determine_output_quality(confidence_reason: str) -> str:
 
 
 # MAIN API ENDPOINT
+
 @app.post("/analyze-case", response_model=CaseResponse)
 def analyze_case(request: CaseRequest):
 
@@ -96,6 +102,12 @@ def analyze_case(request: CaseRequest):
             top_k=TOP_K
         )
 
+        print("TOP MATCHES:", top_matches)  # 🔥 DEBUG
+
+        # Safety check
+        if not top_matches:
+            raise ValueError("No similar cases retrieved.")
+
         similar_cases = [
             SimilarCase(
                 case_id=case_id,
@@ -109,11 +121,13 @@ def analyze_case(request: CaseRequest):
         
         insight = insight_generator.generate_insight(top_matches)
 
-        predicted_diagnosis = insight["predicted_diagnosis"]
-        suggested_treatment = insight["suggested_treatment"]
-        confidence_score = insight["confidence_score"]
-        confidence_reason = insight["confidence_reason"]
-        explanation = insight["explanation"]
+        print("INSIGHT OUTPUT:", insight)  
+
+        predicted_diagnosis = insight.get("predicted_diagnosis", "N/A")
+        suggested_treatment = insight.get("suggested_treatment", "N/A")
+        confidence_score = insight.get("confidence_score", 0.0)
+        confidence_reason = insight.get("confidence_reason", "N/A")
+        explanation = insight.get("explanation", "N/A")
 
         # Measure Response Time
         end_time = time.time()
@@ -127,7 +141,8 @@ def analyze_case(request: CaseRequest):
             output_quality=output_quality
         )
 
-        # FINAL STRUCTURED RESPONSE
+        
+        # FINAL RESPONSE
         
         response = CaseResponse(
             similar_cases=similar_cases,
@@ -148,7 +163,9 @@ def analyze_case(request: CaseRequest):
 
         return response
 
-    except Exception:
+    except Exception as e:
+
+        print("ERROR:", str(e))  
 
         return CaseResponse(
             similar_cases=[],
@@ -159,7 +176,7 @@ def analyze_case(request: CaseRequest):
             confidence_score=0.0,
             confidence_reason="Unable to compute similarity.",
 
-            explanation="System error occurred.",
+            explanation=f"System error: {str(e)}",
 
             system_metrics=SystemMetrics(
                 response_time_ms=0.0,

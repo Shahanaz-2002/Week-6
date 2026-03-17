@@ -12,7 +12,7 @@ class InsightGenerator:
 
     
     # MAIN INSIGHT GENERATION FUNCTION
-    
+   
     def generate_insight(
         self,
         top_matches: List[Tuple[str, float]]
@@ -35,8 +35,8 @@ class InsightGenerator:
         for case_id, score in top_matches:
             case_data = self.case_database.get(case_id, {})
 
-            diagnosis = case_data.get("diagnosis")
-            treatment = case_data.get("treatment")
+            diagnosis = case_data.get("diagnosis", "insufficient data")
+            treatment = case_data.get("treatment", "insufficient data")
 
             if diagnosis:
                 diagnoses.append(diagnosis)
@@ -58,7 +58,7 @@ class InsightGenerator:
         confidence_reason = self._generate_confidence(top_matches)
         confidence_score = self._numeric_confidence(top_matches)
 
-        #  FINAL STRUCTURED OUTPUT
+        # Final structured output
         return {
             "predicted_diagnosis": most_common_diagnosis,
             "suggested_treatment": recommended_treatment,
@@ -69,9 +69,10 @@ class InsightGenerator:
 
 
     
-    # SUMMARY GENERATION
+    # SUMMARY GENERATION 
     
     def _generate_summary(
+        self,
         diagnosis: str,
         treatment: str
     ) -> str:
@@ -102,7 +103,7 @@ class InsightGenerator:
 
     
     # MOST COMMON ITEM
-    
+   
     @staticmethod
     def _most_common(items: List[str]) -> str:
         if not items:
@@ -111,7 +112,7 @@ class InsightGenerator:
 
 
     
-    # TEXT CONFIDENCE 
+    # TEXT CONFIDENCE
     
     @staticmethod
     def _generate_confidence(
@@ -135,8 +136,8 @@ class InsightGenerator:
 
 
    
-    # NUMERIC CONFIDENCE 
-
+    # NUMERIC CONFIDENCE
+   
     @staticmethod
     def _numeric_confidence(
         top_matches: List[Tuple[str, float]]
