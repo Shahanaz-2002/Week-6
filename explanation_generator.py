@@ -1,10 +1,7 @@
 # explanation_generator.py
 
 class ExplanationGenerator:
-    """
-    Generates doctor-readable explanations from aggregated insights
-    and retrieved clinical cases.
-    """
+    
 
     def generate_explanation(self, insight, retrieved_cases):
 
@@ -15,16 +12,18 @@ class ExplanationGenerator:
                 "Clinical recommendation should be made cautiously."
             )
 
-        # Correct keys from insight aggregator
-        diagnosis = insight.get("diagnosis", "the identified condition")
-        treatment = insight.get("treatment", "the recommended treatment")
+        # Extract diagnosis and treatment
+        diagnosis = insight.get("diagnosis", "an unspecified condition")
+        treatment = insight.get("treatment", "a suggested treatment")
 
         case_count = len(retrieved_cases)
 
-        # Calculate average similarity
-        similarities = [case["similarity"] for case in retrieved_cases]
-        avg_similarity = sum(similarities) / len(similarities)
+        # Calculate average similarity safely
+        similarities = [case.get("similarity", 0) for case in retrieved_cases]
 
+        avg_similarity = sum(float(s) for s in similarities) / len(similarities)
+
+        # Generate explanation
         explanation = (
             f"{case_count} similar historical clinical cases were identified "
             f"with an average similarity score of {avg_similarity:.2f}. "

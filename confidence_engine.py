@@ -14,14 +14,14 @@ class ConfidenceEngine:
                 "confidence_level": "No similar cases found"
             }
 
-        # Extract similarity scores
-        similarities = [case["similarity"] for case in retrieved_cases]
+        # Extract similarity scores safely
+        similarities = [case.get("similarity", 0) for case in retrieved_cases]
 
         # Average similarity
-        avg_similarity = sum(similarities) / len(similarities)
+        avg_similarity = sum(float(s) for s in similarities) / len(similarities)
 
         # Number of supporting cases
-        support_ratio = len(retrieved_cases) / TOP_K
+        support_ratio = len(retrieved_cases) / TOP_K if TOP_K else 0
 
         # Confidence formula
         confidence_score = (0.7 * avg_similarity) + (0.3 * support_ratio)

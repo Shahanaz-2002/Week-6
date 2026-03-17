@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from typing import Dict
 import time
+
 from models import CaseRequest, CaseResponse, SimilarCase, SystemMetrics
 from embedding import EmbeddingEngine
 from similarity_engine import SimilarityEngine
@@ -20,7 +21,7 @@ response_cache = {}
 
 
 
-# Startup Initialization
+# STARTUP INITIALIZATION
 
 @app.on_event("startup")
 def initialize_system():
@@ -42,11 +43,11 @@ def initialize_system():
     similarity_engine = SimilarityEngine(case_embeddings)
     insight_generator = InsightGenerator(case_database)
 
-    print(" System initialized successfully.")
+    print("System initialized successfully.")
 
 
 
-# Helper: Convert Confidence Text → Quality Label
+# OUTPUT QUALITY
 
 def determine_output_quality(confidence_reason: str) -> str:
 
@@ -59,8 +60,7 @@ def determine_output_quality(confidence_reason: str) -> str:
 
 
 
-# Main API Endpoint
-
+# MAIN API ENDPOINT
 @app.post("/analyze-case", response_model=CaseResponse)
 def analyze_case(request: CaseRequest):
 
@@ -68,7 +68,7 @@ def analyze_case(request: CaseRequest):
 
     request_key = str(request.symptoms) + request.doctor_notes
 
-    # -------- CACHE CHECK --------
+    # CACHE CHECK
     if request_key in response_cache:
         return response_cache[request_key]
 
@@ -80,6 +80,7 @@ def analyze_case(request: CaseRequest):
                 detail="System not initialized properly."
             )
 
+        # Prepare input case
         new_case = {
             "symptoms": request.symptoms,
             "diagnosis": "",
@@ -103,10 +104,16 @@ def analyze_case(request: CaseRequest):
             for case_id, score in top_matches
         ]
 
-        # Generate insight
-        insight_summary, confidence_reason = (
-            insight_generator.generate_insight(top_matches)
-        )
+        
+        # STRUCTURED INSIGHT
+        
+        insight = insight_generator.generate_insight(top_matches)
+
+        predicted_diagnosis = insight["predicted_diagnosis"]
+        suggested_treatment = insight["suggested_treatment"]
+        confidence_score = insight["confidence_score"]
+        confidence_reason = insight["confidence_reason"]
+        explanation = insight["explanation"]
 
         # Measure Response Time
         end_time = time.time()
@@ -120,22 +127,40 @@ def analyze_case(request: CaseRequest):
             output_quality=output_quality
         )
 
+        # FINAL STRUCTURED RESPONSE
+        
         response = CaseResponse(
             similar_cases=similar_cases,
-            insight_summary=insight_summary,
+
+            predicted_diagnosis=predicted_diagnosis,
+            suggested_treatment=suggested_treatment,
+
+            confidence_score=confidence_score,
             confidence_reason=confidence_reason,
+
+            explanation=explanation,
+
             system_metrics=system_metrics
         )
 
+        # Cache result
         response_cache[request_key] = response
 
         return response
 
     except Exception:
+
         return CaseResponse(
             similar_cases=[],
-            insight_summary="System error occurred.",
+
+            predicted_diagnosis="Error",
+            suggested_treatment="Error",
+
+            confidence_score=0.0,
             confidence_reason="Unable to compute similarity.",
+
+            explanation="System error occurred.",
+
             system_metrics=SystemMetrics(
                 response_time_ms=0.0,
                 output_quality="Error"
